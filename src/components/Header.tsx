@@ -2,9 +2,16 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { LogIn, BookOpen, Plus } from 'lucide-react';
+import { LogIn, BookOpen, Plus, User, LogOut } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const Header = () => {
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+  };
+
   return (
     <header className="border-b border-border bg-background/95 backdrop-blur supports-backdrop-blur:bg-background/60 sticky top-0 z-50 w-full">
       <div className="container flex h-16 items-center justify-between py-4">
@@ -30,18 +37,35 @@ const Header = () => {
         </nav>
         
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/login">
-              <LogIn className="w-4 h-4 mr-2" />
-              Login
-            </Link>
-          </Button>
-          <Button size="sm" asChild>
-            <Link to="/signup">
-              <Plus className="w-4 h-4 mr-2" />
-              Sign Up
-            </Link>
-          </Button>
+          {user ? (
+            <>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/dashboard">
+                  <User className="w-4 h-4 mr-2" />
+                  Dashboard
+                </Link>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/login">
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Login
+                </Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link to="/signup">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Sign Up
+                </Link>
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </header>
