@@ -4,10 +4,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Save, Download, Wand2, Settings } from 'lucide-react';
+import { ArrowLeft, Save, Download, Wand2, Settings, Loader2 } from 'lucide-react';
 import MarkdownEditor from '@/components/editor/MarkdownEditor';
 import PreviewPane from '@/components/editor/PreviewPane';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  useGetPresentation, 
+  useCreatePresentation, 
+  useUpdatePresentation 
+} from '@/services/presentationService';
 
 const initialMarkdown = `# Welcome to SlideAI
 
@@ -43,49 +48,111 @@ function greet() {
 4. Export and share`;
 
 const Editor = () => {
-  const { id } = useParams();
+  const { id = 'new' } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [title, setTitle] = useState('Untitled Presentation');
   const [markdown, setMarkdown] = useState(initialMarkdown);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Fetch presentation data from Supabase
+  const { data: presentation, isLoading, isError, error } = useGetPresentation(id);
+
+  // Mutations
+  const createPresentation = useCreatePresentation();
+  const updatePresentation = useUpdatePresentation();
 
   useEffect(() => {
-    // In a real app, we would fetch the presentation by ID
-    // For now, we'll just set mock data
-    if (id && id !== 'new') {
-      // Mock fetching presentation data
-      setTitle('My Awesome Presentation');
-      // We'll use the initial markdown for now
+    if (id === 'new') {
+      setTitle('Untitled Presentation');
+      setMarkdown(initialMarkdown);
+      setIsInitialized(true);
+      return;
     }
-  }, [id]);
 
-  const handleSave = () => {
-    setIsSaving(true);
-    // Mock save operation
-    setTimeout(() => {
-      setIsSaving(false);
-      toast({
-        title: 'Saved',
-        description: 'Your presentation has been saved.',
-      });
-    }, 800);
+    if (presentation && !isInitialized) {
+      setTitle(presentation.title);
+      setMarkdown(presentation.markdown);
+      setIsInitialized(true);
+    }
+  }, [id, presentation, isInitialized]);
+
+  const handleSave = async () => {
+    try {
+      if (id === 'new') {
+        const newPresentation = await createPresentation.mutateAsync({
+          title,
+          markdown
+        });
+        navigate(`/editor/${newPresentation.id}`, { replace: true });
+      } else {
+        await updatePresentation.mutateAsync({
+          id,
+          presentation: { title, markdown }
+        });
+      }
+    } catch (error) {
+      console.error('Error saving presentation:', error);
+    }
+  };
+
+  const handleDownload = () => {
+    // Create a Blob with the markdown content
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    
+    // Create a temporary anchor element and trigger download
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title.replace(/[^\w\s]/gi, '')}.md`;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: 'Download started',
+      description: `${title}.md is being downloaded`,
+    });
   };
 
   const enhanceWithAI = () => {
     toast({
       title: 'AI Enhancement',
-      description: 'Analyzing and enhancing your presentation...',
+      description: 'This feature is coming soon!',
     });
-    
-    // In a real app, this would call the Mistral API
-    setTimeout(() => {
-      toast({
-        title: 'Enhanced',
-        description: 'Your presentation has been enhanced with AI.',
-      });
-    }, 2000);
   };
+
+  if (isLoading && id !== 'new') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-muted-foreground" />
+        <p className="ml-4 text-muted-foreground">Loading presentation...</p>
+      </div>
+    );
+  }
+
+  if (isError && id !== 'new') {
+    return (
+      <div className="container py-8">
+        <div className="bg-destructive/10 p-4 rounded-lg">
+          <h2 className="text-lg font-medium text-destructive">Error loading presentation</h2>
+          <p className="text-sm text-destructive/80 mt-1">{error?.message || 'An unknown error occurred'}</p>
+          <Button 
+            variant="outline" 
+            className="mt-4" 
+            onClick={() => navigate('/dashboard')}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const isSaving = createPresentation.isPending || updatePresentation.isPending;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -108,7 +175,7 @@ const Editor = () => {
               <Wand2 className="h-4 w-4 mr-2" />
               Enhance with AI
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleDownload}>
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
@@ -116,8 +183,17 @@ const Editor = () => {
               <Settings className="h-5 w-5" />
             </Button>
             <Button onClick={handleSave} disabled={isSaving}>
-              <Save className="h-4 w-4 mr-2" />
-              {isSaving ? 'Saving...' : 'Save'}
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save
+                </>
+              )}
             </Button>
           </div>
         </div>
