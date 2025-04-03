@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 export interface Presentation {
   id: string;
@@ -63,12 +64,21 @@ export const useGetPresentation = (id: string) => {
 // Create a new presentation
 export const useCreatePresentation = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   
   return useMutation({
     mutationFn: async (newPresentation: NewPresentation) => {
+      // Make sure we have a user before trying to create a presentation
+      if (!user) {
+        throw new Error('You must be logged in to create a presentation');
+      }
+      
       const { data, error } = await supabase
         .from('presentations')
-        .insert([newPresentation])
+        .insert([{
+          ...newPresentation,
+          user_id: user.id
+        }])
         .select()
         .single();
       
