@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Google } from 'lucide-react';
+import { Mail } from 'lucide-react';
 
 const Signup = () => {
   const [name, setName] = useState('');
@@ -124,7 +124,7 @@ const Signup = () => {
                 className="w-full" 
                 onClick={handleGoogleSignIn}
               >
-                <Google className="mr-2 h-4 w-4" />
+                <Mail className="mr-2 h-4 w-4" />
                 Google
               </Button>
             </CardContent>
