@@ -15,40 +15,10 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ForgotPassword from "./pages/ForgotPassword";
+import { StrictMode } from "react";
 
+// Create a client
 const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <div className="min-h-screen flex flex-col">
-            <Routes>
-              <Route path="/" element={<LandingPageLayout />} />
-              <Route path="/login" element={<AuthLayout><Login /></AuthLayout>} />
-              <Route path="/signup" element={<AuthLayout><Signup /></AuthLayout>} />
-              <Route path="/forgot-password" element={<AuthLayout><ForgotPassword /></AuthLayout>} />
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <DashboardLayout><Dashboard /></DashboardLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/editor/:id" element={
-                <ProtectedRoute>
-                  <EditorLayout><Editor /></EditorLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </div>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
 
 // Layout components
 const LandingPageLayout = () => (
@@ -78,5 +48,42 @@ const EditorLayout = ({ children }: { children: React.ReactNode }) => (
     <div className="flex-1">{children}</div>
   </>
 );
+
+// Main App component
+function App() {
+  return (
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <div className="min-h-screen flex flex-col">
+                <Routes>
+                  <Route path="/" element={<LandingPageLayout />} />
+                  <Route path="/login" element={<AuthLayout><Login /></AuthLayout>} />
+                  <Route path="/signup" element={<AuthLayout><Signup /></AuthLayout>} />
+                  <Route path="/forgot-password" element={<AuthLayout><ForgotPassword /></AuthLayout>} />
+                  <Route path="/dashboard" element={
+                    <ProtectedRoute>
+                      <DashboardLayout><Dashboard /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/editor/:id" element={
+                    <ProtectedRoute>
+                      <EditorLayout><Editor /></EditorLayout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </div>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </StrictMode>
+  );
+}
 
 export default App;
