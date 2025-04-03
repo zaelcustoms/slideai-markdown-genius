@@ -1,102 +1,152 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, FileText, Clock, Star } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Plus, FileText, Edit, Trash2 } from 'lucide-react';
 
-// Mock data for presentations
-const mockPresentations = [
-  {
-    id: '1',
-    title: 'Introduction to React',
-    lastEdited: '2 hours ago',
-    slides: 12,
-    thumbnail: null
-  },
-  {
-    id: '2',
-    title: 'TypeScript Best Practices',
-    lastEdited: '2 days ago',
-    slides: 24,
-    thumbnail: null
-  },
-  {
-    id: '3',
-    title: 'Web Performance Optimization',
-    lastEdited: '1 week ago',
-    slides: 18,
-    thumbnail: null
-  }
+// Dummy data for presentations (replace with actual data from Supabase later)
+const dummyPresentations = [
+  { id: '1', title: 'Introduction to React', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  { id: '2', title: 'Advanced TypeScript', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  { id: '3', title: 'Web Performance Tips', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
 ];
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [presentations] = useState(mockPresentations);
+  const [presentations, setPresentations] = useState(dummyPresentations);
+  const [newPresTitle, setNewPresTitle] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const createPresentation = () => {
+    if (!newPresTitle.trim()) return;
+    
+    // In a real app, you would create the presentation in Supabase here
+    const newPresentation = {
+      id: Date.now().toString(),
+      title: newPresTitle,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    
+    setPresentations([newPresentation, ...presentations]);
+    setNewPresTitle('');
+    setDialogOpen(false);
+    
+    // Navigate to the editor for the new presentation
+    navigate(`/editor/${newPresentation.id}`);
+  };
+
+  const deletePresentation = (id: string) => {
+    // In a real app, you would delete from Supabase here
+    setPresentations(presentations.filter(pres => pres.id !== id));
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
 
   return (
-    <div className="container max-w-6xl py-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <div className="container py-8 max-w-6xl">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Welcome, {user?.name}</h1>
-          <p className="text-muted-foreground">Manage and create your presentations</p>
+          <h1 className="text-3xl font-bold">Your Presentations</h1>
+          <p className="text-muted-foreground mt-2">
+            Create and manage your Markdown presentations
+          </p>
         </div>
-        <Button onClick={() => navigate('/editor/new')}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          New Presentation
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-        <Card className="border-dashed border-2 bg-transparent hover:bg-secondary/10 transition-colors cursor-pointer group" onClick={() => navigate('/editor/new')}>
-          <CardContent className="flex flex-col items-center justify-center h-64 p-6">
-            <PlusCircle className="h-12 w-12 text-muted-foreground mb-4 group-hover:text-primary transition-colors" />
-            <p className="text-lg font-medium">Create New Presentation</p>
-            <p className="text-muted-foreground text-center mt-2">
-              Start with a blank canvas or choose a template
-            </p>
-          </CardContent>
-        </Card>
-
-        {presentations.map((presentation) => (
-          <Card key={presentation.id} className="overflow-hidden hover:shadow-md transition-shadow">
-            <div className="h-40 bg-gradient-to-br from-primary/20 to-secondary flex items-center justify-center">
-              <FileText className="h-12 w-12 text-primary/60" />
+        
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              New Presentation
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Presentation</DialogTitle>
+              <DialogDescription>
+                Give your presentation a title. You can change this later.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Label htmlFor="title">Presentation Title</Label>
+              <Input
+                id="title"
+                value={newPresTitle}
+                onChange={(e) => setNewPresTitle(e.target.value)}
+                placeholder="My Awesome Presentation"
+                className="mt-2"
+              />
             </div>
-            <CardHeader className="p-4 pb-2">
-              <CardTitle className="text-lg">{presentation.title}</CardTitle>
-              <CardDescription className="flex items-center">
-                <Clock className="h-3 w-3 mr-1" />
-                {presentation.lastEdited} • {presentation.slides} slides
-              </CardDescription>
-            </CardHeader>
-            <CardFooter className="p-4 pt-2 flex justify-between">
-              <Button size="sm" variant="ghost" onClick={() => navigate(`/editor/${presentation.id}`)}>
-                Edit
-              </Button>
-              <Button size="sm" variant="outline">
-                <Star className="h-4 w-4" />
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+              <Button onClick={createPresentation}>Create</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      <div className="bg-secondary/30 rounded-lg p-6 mb-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-medium mb-2">Upgrade to Pro</h2>
-            <p className="text-muted-foreground">
-              Get unlimited presentations, advanced AI features, and more.
-            </p>
-          </div>
-          <Button variant="default" asChild>
-            <Link to="/pricing">See Plans</Link>
+      
+      {presentations.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {presentations.map((presentation) => (
+            <Card key={presentation.id} className="overflow-hidden">
+              <CardHeader className="p-6 pb-4">
+                <CardTitle className="text-xl truncate" title={presentation.title}>
+                  {presentation.title}
+                </CardTitle>
+                <CardDescription>
+                  Created: {formatDate(presentation.createdAt)}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6 pt-0 pb-4">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Last updated: {formatDate(presentation.updatedAt)}
+                </div>
+              </CardContent>
+              <CardFooter className="p-4 pt-0 flex justify-between">
+                <Button variant="outline" size="sm" asChild>
+                  <Link to={`/editor/${presentation.id}`}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit
+                  </Link>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => deletePresentation(presentation.id)}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <FileText className="w-12 h-12 mx-auto text-muted-foreground" />
+          <h3 className="mt-4 text-lg font-medium">No presentations yet</h3>
+          <p className="mt-2 text-muted-foreground">
+            Create your first presentation to get started
+          </p>
+          <Button className="mt-4" onClick={() => setDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Presentation
           </Button>
         </div>
-      </div>
+      )}
     </div>
   );
 };
